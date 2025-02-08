@@ -1,0 +1,148 @@
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.UI;
+
+public class CardGame : MonoBehaviour
+{
+    public Text playerHPText;
+    public Text enemyHPText;
+    public Text turnText;
+    public Text[] cardSlots;  // Assign 4 UI Text objects in Inspector
+
+    private int playerHP = 10;
+    private int enemyHP = 10;
+
+    private List<Card> playerDeck = new List<Card>();
+
+    // Cards with weighted drop rates
+    private Card[] allCards = new Card[]
+    {
+        new Card("Strike", 1, "⚔️", 50),  // 50% chance
+        new Card("Slash", 2, "🗡️", 30),  // 30% chance
+        new Card("Smash", 3, "💥", 20)   // 20% chance (rarer)
+    };
+
+    private bool playerTurn = true;
+
+    void Start()
+    {
+        DrawCard(playerDeck, 4); // Start with 4 cards
+        UpdateUI();
+    }
+
+    void Update()
+    {
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            PlayTurn();
+        }
+    }
+
+    void PlayTurn()
+    {
+        if (playerTurn)
+        {
+            enemyHP -= Attack();
+        }
+        else
+        {
+            playerHP -= Attack();
+        }
+
+        DrawCard(playerDeck, 2);
+        playerTurn = !playerTurn;
+        UpdateUI();
+
+        if (playerHP <= 0 || enemyHP <= 0)
+        {
+            turnText.text = playerHP <= 0 ? "Enemy Wins!" : "Player Wins!";
+            enabled = false;
+        }
+    }
+
+    int Attack()
+    {
+        if (playerDeck.Count > 0)
+        {
+            int index = Random.Range(0, playerDeck.Count);
+            Card playedCard = playerDeck[index];
+            return playedCard.damage;
+        }
+        return 0;
+    }
+
+    void DrawCard(List<Card> deck, int amount)
+    {
+        for (int i = 0; i < amount; i++)
+        {
+            Card newCard = GetRandomWeightedCard();
+            if (deck.Count >= 4)
+            {
+                int randomIndex = Random.Range(0, deck.Count);
+                deck[randomIndex] = newCard; // Replace a random card
+            }
+            else
+            {
+                deck.Add(newCard);
+            }
+        }
+    }
+
+    Card GetRandomWeightedCard()
+    {
+        int totalWeight = 0;
+
+        // Calculate total weight
+        foreach (Card card in allCards)
+        {
+            totalWeight += card.dropRate;
+        }
+
+        int randomValue = Random.Range(0, totalWeight);
+
+        // Select card based on weight
+        foreach (Card card in allCards)
+        {
+            if (randomValue < card.dropRate)
+            {
+                return card;
+            }
+            randomValue -= card.dropRate;
+        }
+
+        return allCards[0]; // Fallback (should never happen)
+    }
+
+    void UpdateUI()
+    {
+        playerHPText.text = $"Player HP: {playerHP}";
+        enemyHPText.text = $"Enemy HP: {enemyHP}";
+        turnText.text = playerTurn ? "Player's Turn" : "Enemy's Turn";
+
+        for (int i = 0; i < 4; i++)
+        {
+            cardSlots[i].text = i < playerDeck.Count ? playerDeck[i].ToString() : "Empty";
+        }
+    }
+}
+
+public class Card
+{
+    public string name;
+    public int damage;
+    public string icon;
+    public int dropRate; // New: Drop rate chance
+
+    public Card(string name, int damage, string icon, int dropRate)
+    {
+        this.name = name;
+        this.damage = damage;
+        this.icon = icon;
+        this.dropRate = dropRate;
+    }
+
+    public override string ToString()
+    {
+        return $"{icon} {name} ({damage} DMG)";
+    }
+}
