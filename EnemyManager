@@ -1,0 +1,82 @@
+using UnityEngine;
+using System.Collections.Generic;
+
+[System.Serializable]
+public class EnemyData
+{
+    public string name;      // Enemy name
+    public GameObject prefab; // Enemy prefab to spawn
+    public int hp;           // Enemy HP
+    public int weight;       // Spawn probability weight
+}
+
+public class EnemyManager : MonoBehaviour
+{
+    public EnemyData[] mobEnemies = new EnemyData[]
+    {
+        new EnemyData { name = "Slime", hp = 10, weight = 50 },
+        new EnemyData { name = "Goblin", hp = 15, weight = 40 },
+        new EnemyData { name = "Orc", hp = 20, weight = 30 },
+        new EnemyData { name = "Troll", hp = 25, weight = 20 },
+        new EnemyData { name = "Golem", hp = 30, weight = 10 }
+    };
+
+    public EnemyData[] bossEnemies = new EnemyData[]
+    {
+        new EnemyData { name = "Slime King", hp = 20, weight = 50 },
+        new EnemyData { name = "Goblin Chief", hp = 25, weight = 40 },
+        new EnemyData { name = "Orc Warlord", hp = 30, weight = 30 },
+        new EnemyData { name = "Troll Chieftain", hp = 35, weight = 20 },
+        new EnemyData { name = "Ancient Golem", hp = 40, weight = 10 }
+    };
+
+    private int enemyDefeatCount = 0; // Track defeated enemies
+
+    void Start()
+    {
+        SpawnEnemy();
+    }
+
+    void SpawnEnemy()
+    {
+        EnemyData selectedEnemy;
+
+        if (enemyDefeatCount >= 10) // If 10 enemies are defeated, spawn a boss
+        {
+            selectedEnemy = WeightedRandomSelection(bossEnemies);
+            enemyDefeatCount = 0; // Reset defeat count after spawning a boss
+        }
+        else
+        {
+            selectedEnemy = WeightedRandomSelection(mobEnemies);
+        }
+
+        GameObject enemyInstance = Instantiate(selectedEnemy.prefab, transform.position, Quaternion.identity);
+        enemyInstance.GetComponent<Enemy>().SetHP(selectedEnemy.hp); // Assign HP to spawned enemy
+    }
+
+    // Selects an enemy with weighted randomness
+    private EnemyData WeightedRandomSelection(EnemyData[] enemyArray)
+    {
+        int totalWeight = 0;
+        foreach (EnemyData enemy in enemyArray) totalWeight += enemy.weight;
+
+        int randomValue = Random.Range(0, totalWeight);
+        int accumulatedWeight = 0;
+
+        foreach (EnemyData enemy in enemyArray)
+        {
+            accumulatedWeight += enemy.weight;
+            if (randomValue < accumulatedWeight) return enemy;
+        }
+
+        return enemyArray[0]; // Fallback
+    }
+
+    // Call this when an enemy is defeated
+    public void OnEnemyDefeated()
+    {
+        enemyDefeatCount++;
+        SpawnEnemy();
+    }
+}
