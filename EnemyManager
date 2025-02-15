@@ -1,36 +1,25 @@
 using UnityEngine;
-using System.Collections.Generic;
+using UnityEngine.UI;
 
 [System.Serializable]
 public class EnemyData
 {
-    public string name;      // Enemy name
-    public GameObject prefab; // Enemy prefab to spawn
-    public int hp;           // Enemy HP
-    public int weight;       // Spawn probability weight
+    public string name;
+    public GameObject prefab;
+    public int hp;
+    public int weight;
 }
 
 public class EnemyManager : MonoBehaviour
 {
-    public EnemyData[] mobEnemies = new EnemyData[]
-    {
-        new EnemyData { name = "Slime", hp = 10, weight = 50 },
-        new EnemyData { name = "Goblin", hp = 15, weight = 40 },
-        new EnemyData { name = "Orc", hp = 20, weight = 30 },
-        new EnemyData { name = "Troll", hp = 25, weight = 20 },
-        new EnemyData { name = "Golem", hp = 30, weight = 10 }
-    };
+    public EnemyData[] mobEnemies;
+    public EnemyData[] bossEnemies;
 
-    public EnemyData[] bossEnemies = new EnemyData[]
-    {
-        new EnemyData { name = "Slime King", hp = 20, weight = 50 },
-        new EnemyData { name = "Goblin Chief", hp = 25, weight = 40 },
-        new EnemyData { name = "Orc Warlord", hp = 30, weight = 30 },
-        new EnemyData { name = "Troll Chieftain", hp = 35, weight = 20 },
-        new EnemyData { name = "Ancient Golem", hp = 40, weight = 10 }
-    };
+    public Text enemyNameText; // UI element for enemy name
+    public Slider enemyHpBar;  // UI element for enemy HP
 
-    private int enemyDefeatCount = 0; // Track defeated enemies
+    private int enemyDefeatCount = 0;
+    private Enemy currentEnemy;
 
     void Start()
     {
@@ -41,21 +30,28 @@ public class EnemyManager : MonoBehaviour
     {
         EnemyData selectedEnemy;
 
-        if (enemyDefeatCount >= 10) // If 10 enemies are defeated, spawn a boss
+        if (enemyDefeatCount >= 10)
         {
             selectedEnemy = WeightedRandomSelection(bossEnemies);
-            enemyDefeatCount = 0; // Reset defeat count after spawning a boss
+            enemyDefeatCount = 0;
         }
         else
         {
             selectedEnemy = WeightedRandomSelection(mobEnemies);
         }
 
-        GameObject enemyInstance = Instantiate(selectedEnemy.prefab, transform.position, Quaternion.identity);
-        enemyInstance.GetComponent<Enemy>().SetHP(selectedEnemy.hp); // Assign HP to spawned enemy
+        if (currentEnemy == null)
+        {
+            currentEnemy = FindObjectOfType<Enemy>(); // Find existing enemy
+        }
+
+        if (currentEnemy != null)
+        {
+            currentEnemy.Initialize(selectedEnemy.hp, selectedEnemy.name);
+            UpdateUI(selectedEnemy.name, selectedEnemy.hp);
+        }
     }
 
-    // Selects an enemy with weighted randomness
     private EnemyData WeightedRandomSelection(EnemyData[] enemyArray)
     {
         int totalWeight = 0;
@@ -70,13 +66,24 @@ public class EnemyManager : MonoBehaviour
             if (randomValue < accumulatedWeight) return enemy;
         }
 
-        return enemyArray[0]; // Fallback
+        return enemyArray[0];
     }
 
-    // Call this when an enemy is defeated
     public void OnEnemyDefeated()
     {
         enemyDefeatCount++;
         SpawnEnemy();
+    }
+
+    private void UpdateUI(string enemyName, int enemyHp)
+    {
+        if (enemyNameText != null)
+            enemyNameText.text = enemyName;
+
+        if (enemyHpBar != null)
+        {
+            enemyHpBar.maxValue = enemyHp;
+            enemyHpBar.value = enemyHp;
+        }
     }
 }
