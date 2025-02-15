@@ -1,0 +1,28 @@
+using UnityEngine;
+using UnityEngine.UI;
+
+public class Enemy : MonoBehaviour
+{
+    private int hp;
+    private int maxHp;
+    private string enemyName;
+
+    public void Initialize(int health, string name)
+    {
+        maxHp = health;
+        hp = health;
+        enemyName = name;
+    }
+
+    public void TakeDamage(int damage)
+    {
+        hp -= damage;
+
+        FindObjectOfType<EnemyManager>().enemyHpBar.value = hp; // Update UI HP bar
+
+        if (hp <= 0)
+        {
+            FindObjectOfType<EnemyManager>().OnEnemyDefeated();
+        }
+    }
+}
