@@ -1,0 +1,139 @@
+// GameManager.cs - Handles overall game flow
+using UnityEngine;
+using TMPro;
+using System.Collections;
+
+public class GameManager : MonoBehaviour
+{
+    public TextMeshProUGUI playerHPText, enemyHPText, turnIndicatorText;
+    public Transform cardSpawnArea;
+    public GameObject cardPrefab;
+    public GameObject player, enemy;
+    public int playerHP = 10, enemyHP = 10;
+    private bool inputBlocked = false;
+    private bool playerTurn = true;
+    
+    void Start()
+    {
+        UpdateUI();
+    }
+    
+    public void PlayCard(Card card)
+    {
+        if (inputBlocked) return;
+        enemyHP -= card.damage;
+        if (card.endTurn) playerTurn = !playerTurn;
+        ReplaceRandomCard();
+        UpdateUI();
+        CheckGameOver();
+    }
+    
+    void ReplaceRandomCard()
+    {
+        inputBlocked = true;
+        int randomSlot = Random.Range(0, 4);
+        Card cardToRemove = cardSpawnArea.GetChild(randomSlot).GetComponent<Card>();
+        cardToRemove.TriggerGlowEffect();
+        StartCoroutine(RemoveAndReplaceCard(cardToRemove, randomSlot));
+    }
+    
+    IEnumerator RemoveAndReplaceCard(Card card, int slotIndex)
+    {
+        yield return new WaitForSeconds(1f);
+        Destroy(card.gameObject);
+        GameObject newCard = Instantiate(cardPrefab, cardSpawnArea);
+        newCard.GetComponent<Card>().Initialize(Random.Range(1, 4), Random.value > 0.5f);
+        inputBlocked = false;
+    }
+    
+    void UpdateUI()
+    {
+        playerHPText.text = "Player HP: " + playerHP;
+        enemyHPText.text = "Enemy HP: " + enemyHP;
+        turnIndicatorText.text = playerTurn ? "Your Turn" : "Enemy Turn";
+    }
+    
+    void CheckGameOver()
+    {
+        if (playerHP <= 0 || enemyHP <= 0)
+        {
+            Debug.Log("Game Over");
+        }
+    }
+}
+
+// Card.cs - Handles individual card behavior
+using UnityEngine;
+using TMPro;
+using System.Collections;
+
+public class Card : MonoBehaviour
+{
+    public int damage;
+    public bool endTurn;
+    public TextMeshProUGUI cardText;
+    public Outline textGlow;
+
+    public void Initialize(int dmg, bool endTurnEffect)
+    {
+        damage = dmg;
+        endTurn = endTurnEffect;
+        cardText.text = "DMG: " + damage;
+    }
+    
+    public void TriggerGlowEffect()
+    {
+        StartCoroutine(GlowEffect());
+    }
+    
+    private IEnumerator GlowEffect()
+    {
+        textGlow.enabled = true;
+        yield return new WaitForSeconds(1f);
+        textGlow.enabled = false;
+    }
+}
+
+// EnemyManager.cs - Handles enemy selection and UI updates
+using UnityEngine;
+using TMPro;
+
+public class EnemyManager : MonoBehaviour
+{
+    public TextMeshProUGUI enemyNameText;
+    public int defeatCount = 0;
+    
+    public Enemy[] mobEnemies;
+    public Enemy[] bossEnemies;
+    private Enemy currentEnemy;
+    
+    void Start()
+    {
+        SelectNewEnemy();
+    }
+    
+    public void SelectNewEnemy()
+    {
+        if (defeatCount >= 10)
+            currentEnemy = bossEnemies[Random.Range(0, bossEnemies.Length)];
+        else
+            currentEnemy = mobEnemies[Random.Range(0, mobEnemies.Length)];
+        
+        UpdateEnemyUI();
+    }
+    
+    void UpdateEnemyUI()
+    {
+        enemyNameText.text = currentEnemy.enemyName;
+    }
+}
+
+// Enemy.cs - Enemy Data Structure
+using UnityEngine;
+
+[System.Serializable]
+public class Enemy
+{
+    public string enemyName;
+    public int health;
+}
