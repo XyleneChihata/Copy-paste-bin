@@ -21,8 +21,8 @@ public class GameManager : MonoBehaviour
     public void PlayCard(Card card)
     {
         if (inputBlocked) return;
-        enemyHP -= card.damage;
-        if (card.endTurn) playerTurn = !playerTurn;
+        enemyHP -= card.GetDamage();
+        if (card.IsEndTurn()) playerTurn = !playerTurn;
         ReplaceRandomCard();
         UpdateUI();
         CheckGameOver();
@@ -69,8 +69,8 @@ using System.Collections;
 
 public class Card : MonoBehaviour
 {
-    public int damage;
-    public bool endTurn;
+    private int damage;
+    private bool endTurn;
     public TextMeshProUGUI cardText;
     public Outline textGlow;
 
@@ -79,6 +79,16 @@ public class Card : MonoBehaviour
         damage = dmg;
         endTurn = endTurnEffect;
         cardText.text = "DMG: " + damage;
+    }
+    
+    public int GetDamage()
+    {
+        return damage;
+    }
+    
+    public bool IsEndTurn()
+    {
+        return endTurn;
     }
     
     public void TriggerGlowEffect()
@@ -103,8 +113,24 @@ public class EnemyManager : MonoBehaviour
     public TextMeshProUGUI enemyNameText;
     public int defeatCount = 0;
     
-    public Enemy[] mobEnemies;
-    public Enemy[] bossEnemies;
+    public Enemy[] mobEnemies = new Enemy[]
+    {
+        new Enemy("Goblin", 10),
+        new Enemy("Orc", 12),
+        new Enemy("Troll", 15),
+        new Enemy("Skeleton", 8),
+        new Enemy("Bandit", 11)
+    };
+    
+    public Enemy[] bossEnemies = new Enemy[]
+    {
+        new Enemy("Goblin King", 20),
+        new Enemy("Orc Warlord", 22),
+        new Enemy("Troll Chieftain", 25),
+        new Enemy("Lich", 18),
+        new Enemy("Bandit Lord", 21)
+    };
+    
     private Enemy currentEnemy;
     
     void Start()
@@ -126,6 +152,12 @@ public class EnemyManager : MonoBehaviour
     {
         enemyNameText.text = currentEnemy.enemyName;
     }
+    
+    public void OnEnemyDefeated()
+    {
+        defeatCount++;
+        SelectNewEnemy();
+    }
 }
 
 // Enemy.cs - Enemy Data Structure
@@ -136,4 +168,10 @@ public class Enemy
 {
     public string enemyName;
     public int health;
+    
+    public Enemy(string name, int hp)
+    {
+        enemyName = name;
+        health = hp;
+    }
 }
