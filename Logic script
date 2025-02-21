@@ -1,0 +1,86 @@
+using UnityEngine;
+using TMPro;
+using System.Collections;
+using System.Collections.Generic;
+
+public class GameManager : MonoBehaviour
+{
+    public TextMeshProUGUI playerHPText, enemyHPText, turnIndicatorText;
+    public Transform[] cardSlots; // Array for 4 card slots
+    public GameObject cardPrefab;
+    public int playerHP = 10, enemyHP = 10;
+    private bool inputBlocked = false;
+    private bool playerTurn = true;
+
+    private List<Card> currentCards = new List<Card>(); // List to track active cards
+
+    void Start()
+    {
+        InitializeCards();
+        UpdateUI();
+    }
+
+    void InitializeCards()
+    {
+        for (int i = 0; i < cardSlots.Length; i++)
+        {
+            SpawnNewCard(i);
+        }
+    }
+
+    void SpawnNewCard(int slotIndex)
+    {
+        GameObject newCard = Instantiate(cardPrefab, cardSlots[slotIndex]);
+        Card cardComponent = newCard.GetComponent<Card>();
+        cardComponent.Initialize(Random.Range(1, 4), Random.value > 0.5f);
+        currentCards.Insert(slotIndex, cardComponent);
+    }
+
+    public void PlayCard(int slotIndex)
+    {
+        if (inputBlocked || slotIndex >= currentCards.Count) return;
+
+        Card selectedCard = currentCards[slotIndex];
+
+        // Apply Card Effect
+        enemyHP -= selectedCard.GetDamage();
+        if (selectedCard.IsEndTurn()) playerTurn = !playerTurn;
+
+        ReplaceRandomCard(slotIndex);
+        UpdateUI();
+        CheckGameOver();
+    }
+
+    void ReplaceRandomCard(int slotIndex)
+    {
+        inputBlocked = true;
+        Card cardToRemove = currentCards[slotIndex];
+        cardToRemove.TriggerGlowEffect();
+
+        StartCoroutine(RemoveAndReplaceCard(slotIndex));
+    }
+
+    IEnumerator RemoveAndReplaceCard(int slotIndex)
+    {
+        yield return new WaitForSeconds(1f);
+        Destroy(currentCards[slotIndex].gameObject);
+        currentCards.RemoveAt(slotIndex);
+        SpawnNewCard(slotIndex);
+        inputBlocked = false;
+    }
+
+    void UpdateUI()
+    {
+        playerHPText.text = "Player HP: " + playerHP;
+        enemyHPText.text = "Enemy HP: " + enemyHP;
+        turnIndicatorText.text = playerTurn ? "Your Turn" : "Enemy Turn";
+    }
+
+    void CheckGameOver()
+    {
+        if (playerHP <= 0 || enemyHP <= 0)
+        {
+            Debug.Log("Game Over");
+        }
+    }
+}
