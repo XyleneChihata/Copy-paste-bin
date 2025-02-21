@@ -19,20 +19,20 @@ public class GameManager : MonoBehaviour
     {
         cardPool.Clear();
 
-        // Weighting: Damage 1 (common), Damage 2 (uncommon), Damage 3 (rare)
-        AddCardToPool(1, 50); // 50% chance
-        AddCardToPool(2, 30); // 30% chance
-        AddCardToPool(3, 15); // 15% chance
-        AddCardToPool(-2, 5); // 5% chance (heal card)
+        // Adding cards with name, damage, and weighting
+        AddCardToPool(new CardData("Light Strike", 1, true), 50);  // 50% chance
+        AddCardToPool(new CardData("Strong Hit", 2, true), 30);    // 30% chance
+        AddCardToPool(new CardData("Power Smash", 3, true), 15);   // 15% chance
+        AddCardToPool(new CardData("Heal", -2, false), 5);         // 5% chance
 
         ShuffleCardPool();
     }
 
-    void AddCardToPool(int damage, int weight)
+    void AddCardToPool(CardData card, int weight)
     {
         for (int i = 0; i < weight; i++)
         {
-            cardPool.Add(new CardData(damage, damage == -2 ? "Heal" : "Attack"));
+            cardPool.Add(card);
         }
     }
 
@@ -59,7 +59,8 @@ public class GameManager : MonoBehaviour
         Card cardComponent = newCard.GetComponent<Card>();
 
         CardData randomCard = cardPool[Random.Range(0, cardPool.Count)];
-        cardComponent.Initialize(randomCard.damage, randomCard.type);
+
+        cardComponent.Initialize(randomCard.name, randomCard.damage, randomCard.endTurn);
         currentCards.Insert(slotIndex, cardComponent);
     }
 }
@@ -68,12 +69,14 @@ public class GameManager : MonoBehaviour
 [System.Serializable]
 public class CardData
 {
+    public string name;
     public int damage;
-    public string type;
+    public bool endTurn;
 
-    public CardData(int dmg, string type)
+    public CardData(string name, int damage, bool endTurn)
     {
-        this.damage = dmg;
-        this.type = type;
+        this.name = name;
+        this.damage = damage;
+        this.endTurn = endTurn;
     }
 }
