@@ -1,23 +1,48 @@
 using UnityEngine;
-using TMPro;
-using System.Collections;
 using System.Collections.Generic;
 
 public class GameManager : MonoBehaviour
 {
-    public TextMeshProUGUI playerHPText, enemyHPText, turnIndicatorText;
-    public Transform[] cardSlots; // Array for 4 card slots
     public GameObject cardPrefab;
-    public int playerHP = 10, enemyHP = 10;
-    private bool inputBlocked = false;
-    private bool playerTurn = true;
+    public Transform[] cardSlots; // 4 card slots
 
-    private List<Card> currentCards = new List<Card>(); // List to track active cards
+    private List<CardData> cardPool = new List<CardData>();
+    private List<Card> currentCards = new List<Card>();
 
     void Start()
     {
+        InitializeCardPool();
         InitializeCards();
-        UpdateUI();
+    }
+
+    void InitializeCardPool()
+    {
+        cardPool.Clear();
+
+        // Weighting: Damage 1 (common), Damage 2 (uncommon), Damage 3 (rare)
+        AddCardToPool(1, 50); // 50% chance
+        AddCardToPool(2, 30); // 30% chance
+        AddCardToPool(3, 15); // 15% chance
+        AddCardToPool(-2, 5); // 5% chance (heal card)
+
+        ShuffleCardPool();
+    }
+
+    void AddCardToPool(int damage, int weight)
+    {
+        for (int i = 0; i < weight; i++)
+        {
+            cardPool.Add(new CardData(damage, damage == -2 ? "Heal" : "Attack"));
+        }
+    }
+
+    void ShuffleCardPool()
+    {
+        for (int i = cardPool.Count - 1; i > 0; i--)
+        {
+            int randomIndex = Random.Range(0, i + 1);
+            (cardPool[i], cardPool[randomIndex]) = (cardPool[randomIndex], cardPool[i]);
+        }
     }
 
     void InitializeCards()
@@ -32,55 +57,23 @@ public class GameManager : MonoBehaviour
     {
         GameObject newCard = Instantiate(cardPrefab, cardSlots[slotIndex]);
         Card cardComponent = newCard.GetComponent<Card>();
-        cardComponent.Initialize(Random.Range(1, 4), Random.value > 0.5f);
+
+        CardData randomCard = cardPool[Random.Range(0, cardPool.Count)];
+        cardComponent.Initialize(randomCard.damage, randomCard.type);
         currentCards.Insert(slotIndex, cardComponent);
     }
+}
 
-    public void PlayCard(int slotIndex)
+// Structure to store card properties
+[System.Serializable]
+public class CardData
+{
+    public int damage;
+    public string type;
+
+    public CardData(int dmg, string type)
     {
-        if (inputBlocked || slotIndex >= currentCards.Count) return;
-
-        Card selectedCard = currentCards[slotIndex];
-
-        // Apply Card Effect
-        enemyHP -= selectedCard.GetDamage();
-        if (selectedCard.IsEndTurn()) playerTurn = !playerTurn;
-
-        ReplaceRandomCard(slotIndex);
-        UpdateUI();
-        CheckGameOver();
-    }
-
-    void ReplaceRandomCard(int slotIndex)
-    {
-        inputBlocked = true;
-        Card cardToRemove = currentCards[slotIndex];
-        cardToRemove.TriggerGlowEffect();
-
-        StartCoroutine(RemoveAndReplaceCard(slotIndex));
-    }
-
-    IEnumerator RemoveAndReplaceCard(int slotIndex)
-    {
-        yield return new WaitForSeconds(1f);
-        Destroy(currentCards[slotIndex].gameObject);
-        currentCards.RemoveAt(slotIndex);
-        SpawnNewCard(slotIndex);
-        inputBlocked = false;
-    }
-
-    void UpdateUI()
-    {
-        playerHPText.text = "Player HP: " + playerHP;
-        enemyHPText.text = "Enemy HP: " + enemyHP;
-        turnIndicatorText.text = playerTurn ? "Your Turn" : "Enemy Turn";
-    }
-
-    void CheckGameOver()
-    {
-        if (playerHP <= 0 || enemyHP <= 0)
-        {
-            Debug.Log("Game Over");
-        }
+        this.damage = dmg;
+        this.type = type;
     }
 }
